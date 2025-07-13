@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线尺子 - 精准屏幕测量工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .ruler-section {
+            padding: 30px;
+            background: #fff;
+            text-align: center;
+            position: relative;
+        }
+
+        .ruler-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .ruler {
+            position: relative;
+            background: linear-gradient(to bottom, #fff 0%, #f8f9fa 100%);
+            border: 2px solid #333;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+            user-select: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .ruler.horizontal {
+            height: 80px;
+            min-width: 300px;
+        }
+
+        .ruler.vertical {
+            width: 80px;
+            min-height: 300px;
+            display: inline-block;
+        }
+
+        .scale-line {
+            position: absolute;
+            background: #333;
+        }
+
+        .ruler.horizontal .scale-line {
+            bottom: 0;
+            width: 1px;
+        }
+
+        .ruler.vertical .scale-line {
+            left: 0;
+            height: 1px;
+        }
+
+        .scale-line.cm {
+            background: #000;
+        }
+
+        .ruler.horizontal .scale-line.cm {
+            height: 30px;
+            width: 2px;
+        }
+
+        .ruler.horizontal .scale-line.mm5 {
+            height: 20px;
+            width: 1.5px;
+        }
+
+        .ruler.horizontal .scale-line.mm {
+            height: 12px;
+        }
+
+        .ruler.vertical .scale-line.cm {
+            width: 30px;
+            height: 2px;
+        }
+
+        .ruler.vertical .scale-line.mm5 {
+            width: 20px;
+            height: 1.5px;
+        }
+
+        .ruler.vertical .scale-line.mm {
+            width: 12px;
+        }
+
+        .scale-number {
+            position: absolute;
+            font-size: 11px;
+            font-weight: bold;
+            color: #000;
+            z-index: 10;
+        }
+
+        .ruler.horizontal .scale-number {
+            bottom: 35px;
+            transform: translateX(-50%);
+        }
+
+        .ruler.vertical .scale-number {
+            left: 35px;
+            transform: translateY(-50%);
+            writing-mode: vertical-lr;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 30px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .control-panel h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        .ppi-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ppi-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            font-size: 12px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .reference-objects {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .reference-objects h4 {
+            color: #27ae60;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .reference-list {
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .orientation-toggle {
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            background: #e74c3c;
+            color: white;
+            margin: 0 5px;
+        }
+
+        .toggle-btn.active {
+            background: #c0392b;
+        }
+
+        .units-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .unit-btn {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .unit-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .device-presets {
+            margin-top: 15px;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .preset-btn {
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .preset-btn:hover {
+            background: #e9ecef;
+        }
+
+        .calibration-tip {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .calibration-tip h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .calibration-tip p {
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .ruler-section {
+                padding: 20px;
+            }
+            
+            .controls {
+                padding: 20px;
+            }
+            
+            .control-group {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .ppi-control {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .preset-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>在线尺子 - 精准屏幕测量工具</h1>
+        <p>便捷准确的虚拟尺子，支持厘米、毫米、英寸测量</p>
+    </div>
+
+    <div class="main-container">
+        <div class="ruler-section">
+            <div class="orientation-toggle">
+                <button class="btn toggle-btn active" onclick="setOrientation('horizontal')">横向尺子 ↔</button>
+                <button class="btn toggle-btn" onclick="setOrientation('vertical')">垂直尺子 ↕</button>
+            </div>
+            
+            <div class="units-toggle">
+                <button class="unit-btn active" onclick="setUnit('cm')">厘米/毫米</button>
+                <button class="unit-btn" onclick="setUnit('inch')">英寸</button>
+            </div>
+            
+            <div class="ruler-container">
+                <div class="ruler horizontal" id="ruler"></div>
+            </div>
+            
+            <p style="margin-top: 15px; color: #666; font-size: 13px;">
+                当前尺子长度: <span id="rulerLengthDisplay">0</span> | 
+                PPI: <span id="currentPPI">96</span> | 
+                精度: <span id="accuracy">标准</span>
+            </p>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-panel">
+                    <h3>🎯 PPI 校准</h3>
+                    <div class="ppi-control">
+                        <label>PPI值:</label>
+                        <input type="number" id="ppiInput" class="ppi-input" value="96" min="50" max="500">
+                        <button class="btn btn-primary" onclick="setPPI()">应用</button>
+                    </div>
+                    
+                    <div class="device-presets">
+                        <h4>设备预设:</h4>
+                        <div class="preset-grid">
+                            <button class="preset-btn" onclick="setDevicePreset(96)">标准显示器<br>96 PPI</button>
+                            <button class="preset-btn" onclick="setDevicePreset(110)">笔记本<br>110 PPI</button>
+                            <button class="preset-btn" onclick="setDevicePreset(163)">iPhone<br>163 PPI</button>
+                            <button class="preset-btn" onclick="setDevicePreset(132)">iPad<br>132 PPI</button>
+                            <button class="preset-btn" onclick="setDevicePreset(160)">Android<br>160 PPI</button>
+                            <button class="preset-btn" onclick="setDevicePreset(220)">高分屏<br>220 PPI</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <h3>📱 设备信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span>屏幕尺寸:</span>
+                            <span id="screenSize">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span>像素密度:</span>
+                            <span id="pixelRatio">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span>设备方向:</span>
+                            <span id="orientation">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span>浏览器:</span>
+                            <span id="browser">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span>分辨率:</span>
+                            <span id="resolution">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span>可视区域:</span>
+                            <span id="viewport">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reference-objects">
+                <h4>📏 校准参考物</h4>
+                <div class="reference-list">
+                    <strong>标准尺寸参考:</strong><br>
+                    • 标准信用卡: 85.6 × 53.98 mm<br>
+                    • 人民币(新版): 155 × 77 mm<br>
+                    • 1元硬币: 直径 25 mm<br>
+                    • 标准CD光盘: 直径 120 mm<br>
+                    • A4纸: 210 × 297 mm<br>
+                    • iPhone 14: 146.7 × 71.5 mm
+                </div>
+            </div>
+
+            <div class="calibration-tip">
+                <h4>🔧 如何精确校准</h4>
+                <p>
+                    <strong>方法1:</strong> 拿一张信用卡放在屏幕上，调整PPI值直到尺子刻度与信用卡长度(85.6mm)完全一致。<br>
+                    <strong>方法2:</strong> 使用硬币对比，1元硬币直径为25mm。<br>
+                    <strong>方法3:</strong> 如果有实体尺子，直接对比调整到完全一致。<br>
+                    <strong>提示:</strong> 不同设备的PPI值不同，首次使用建议校准以获得最佳精度。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPPI = 96;
+        let currentOrientation = 'horizontal';
+        let currentUnit = 'cm';
+        let rulerLength = 0;
+
+        // 设备预设PPI值
+        const devicePresets = {
+            'iPhone': 163,
+            'iPad': 132,
+            'Android': 160,
+            'MacBook': 110,
+            'Desktop': 96
+        };
+
+        function detectDeviceType() {
+            const userAgent = navigator.userAgent;
+            const pixelRatio = window.devicePixelRatio || 1;
+            
+            if (userAgent.includes('iPhone')) {
+                return 'iPhone';
+            } else if (userAgent.includes('iPad')) {
+                return 'iPad';
+            } else if (userAgent.includes('Android')) {
+                return 'Android';
+            } else if (userAgent.includes('Mac')) {
+                return 'MacBook';
+            } else {
+                return 'Desktop';
+            }
+        }
+
+        function autoDetectPPI() {
+            const deviceType = detectDeviceType();
+            const basePPI = devicePresets[deviceType] || 96;
+            const pixelRatio = window.devicePixelRatio || 1;
+            
+            // 根据像素密度调整
+            if (pixelRatio > 2) {
+                return Math.round(basePPI * 1.2);
+            } else if (pixelRatio > 1.5) {
+                return Math.round(basePPI * 1.1);
+            }
+            
+            return basePPI;
+        }
+
+        function setOrientation(orientation) {
+            currentOrientation = orientation;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 更新尺子
+            const ruler = document.getElementById('ruler');
+            ruler.className = `ruler ${orientation}`;
+            
+            createRuler();
+        }
+
+        function setUnit(unit) {
+            currentUnit = unit;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.unit-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            createRuler();
+        }
+
+        function setPPI() {
+            const newPPI = parseInt(document.getElementById('ppiInput').value);
+            if (newPPI >= 50 && newPPI <= 500) {
+                currentPPI = newPPI;
+                createRuler();
+                updateAccuracy();
+            }
+        }
+
+        function setDevicePreset(ppi) {
+            currentPPI = ppi;
+            document.getElementById('ppiInput').value = ppi;
+            createRuler();
+            updateAccuracy();
+        }
+
+        function updateAccuracy() {
+            const deviceType = detectDeviceType();
+            const recommendedPPI = devicePresets[deviceType] || 96;
+            const deviation = Math.abs(currentPPI - recommendedPPI) / recommendedPPI;
+            
+            let accuracy;
+            if (deviation < 0.05) {
+                accuracy = '高精度';
+            } else if (deviation < 0.15) {
+                accuracy = '良好';
+            } else {
+                accuracy = '需校准';
+            }
+            
+            document.getElementById('accuracy').textContent = accuracy;
+        }
+
+        function createRuler() {
+            const ruler = document.getElementById('ruler');
+            ruler.innerHTML = '';
+            
+            const isHorizontal = currentOrientation === 'horizontal';
+            const maxSize = isHorizontal ? 
+                Math.min(window.innerWidth * 0.8, 800) : 
+                Math.min(window.innerHeight * 0.6, 600);
+            
+            // 计算尺子长度
+            const pixelsPerInch = currentPPI;
+            const pixelsPerCm = pixelsPerInch / 2.54;
+            const pixelsPerMm = pixelsPerCm / 10;
+            
+            if (currentUnit === 'cm') {
+                rulerLength = Math.floor(maxSize / pixelsPerCm);
+                createCmRuler(ruler, maxSize, pixelsPerCm, pixelsPerMm, isHorizontal);
+            } else {
+                rulerLength = Math.floor(maxSize / pixelsPerInch);
+                createInchRuler(ruler, maxSize, pixelsPerInch, isHorizontal);
+            }
+            
+            // 设置尺子尺寸
+            if (isHorizontal) {
+                ruler.style.width = `${maxSize}px`;
+                ruler.style.height = '80px';
+            } else {
+                ruler.style.width = '80px';
+                ruler.style.height = `${maxSize}px`;
+            }
+            
+            updateDisplay();
+        }
+
+        function createCmRuler(ruler, maxSize, pixelsPerCm, pixelsPerMm, isHorizontal) {
+            const maxCm = Math.floor(maxSize / pixelsPerCm);
+            
+            for (let cm = 0; cm <= maxCm; cm++) {
+                const cmPosition = cm * pixelsPerCm;
+                
+                // 厘米刻度
+                const cmLine = document.createElement('div');
+                cmLine.className = 'scale-line cm';
+                if (isHorizontal) {
+                    cmLine.style.left = `${cmPosition}px`;
+                } else {
+                    cmLine.style.top = `${cmPosition}px`;
+                }
+                ruler.appendChild(cmLine);
+                
+                // 厘米数字
+                if (cm > 0) {
+                    const cmNumber = document.createElement('div');
+                    cmNumber.className = 'scale-number';
+                    cmNumber.textContent = cm;
+                    if (isHorizontal) {
+                        cmNumber.style.left = `${cmPosition}px`;
+                    } else {
+                        cmNumber.style.top = `${cmPosition}px`;
+                    }
+                    ruler.appendChild(cmNumber);
+                }
+                
+                // 毫米刻度
+                for (let mm = 1; mm < 10; mm++) {
+                    const mmPosition = cmPosition + (mm * pixelsPerMm);
+                    if (mmPosition > maxSize) break;
+                    
+                    const mmLine = document.createElement('div');
+                    mmLine.className = mm === 5 ? 'scale-line mm5' : 'scale-line mm';
+                    if (isHorizontal) {
+                        mmLine.style.left = `${mmPosition}px`;
+                    } else {
+                        mmLine.style.top = `${mmPosition}px`;
+                    }
+                    ruler.appendChild(mmLine);
+                }
+            }
+        }
+
+        function createInchRuler(ruler, maxSize, pixelsPerInch, isHorizontal) {
+            const maxInch = Math.floor(maxSize / pixelsPerInch);
+            
+            for (let inch = 0; inch <= maxInch; inch++) {
+                const inchPosition = inch * pixelsPerInch;
+                
+                // 英寸刻度
+                const inchLine = document.createElement('div');
+                inchLine.className = 'scale-line cm';
+                if (isHorizontal) {
+                    inchLine.style.left = `${inchPosition}px`;
+                } else {
+                    inchLine.style.top = `${inchPosition}px`;
+                }
+                ruler.appendChild(inchLine);
+                
+                // 英寸数字
+                if (inch > 0) {
+                    const inchNumber = document.createElement('div');
+                    inchNumber.className = 'scale-number';
+                    inchNumber.textContent = inch + '"';
+                    if (isHorizontal) {
+                        inchNumber.style.left = `${inchPosition}px`;
+                    } else {
+                        inchNumber.style.top = `${inchPosition}px`;
+                    }
+                    ruler.appendChild(inchNumber);
+                }
+                
+                // 分数刻度 (1/2, 1/4, 1/8, 1/16)
+                const fractions = [
+                    {pos: 0.5, class: 'mm5'},
+                    {pos: 0.25, class: 'mm'}, {pos: 0.75, class: 'mm'},
+                    {pos: 0.125, class: 'mm'}, {pos: 0.375, class: 'mm'}, 
+                    {pos: 0.625, class: 'mm'}, {pos: 0.875, class: 'mm'}
+                ];
+                
+                fractions.forEach(frac => {
+                    const fracPosition = inchPosition + (frac.pos * pixelsPerInch);
+                    if (fracPosition > maxSize) return;
+                    
+                    const fracLine = document.createElement('div');
+                    fracLine.className = `scale-line ${frac.class}`;
+                    if (isHorizontal) {
+                        fracLine.style.left = `${fracPosition}px`;
+                    } else {
+                        fracLine.style.top = `${fracPosition}px`;
+                    }
+                    ruler.appendChild(fracLine);
+                });
+            }
+        }
+
+        function updateDisplay() {
+            const unit = currentUnit === 'cm' ? 'cm' : 'inch';
+            document.getElementById('rulerLengthDisplay').textContent = `${rulerLength} ${unit}`;
+            document.getElementById('currentPPI').textContent = currentPPI;
+        }
+
+        function updateDeviceInfo() {
+            const getBrowserInfo = () => {
+                const userAgent = navigator.userAgent;
+                if (userAgent.includes('Chrome')) return 'Chrome';
+                if (userAgent.includes('Firefox')) return 'Firefox';
+                if (userAgent.includes('Safari')) return 'Safari';
+                if (userAgent.includes('Edge')) return 'Edge';
+                return 'Unknown';
+            };
+            
+            document.getElementById('screenSize').textContent = `${screen.width}×${screen.height}`;
+            document.getElementById('pixelRatio').textContent = (window.devicePixelRatio || 1).toFixed(2);
+            document.getElementById('orientation').textContent = window.innerWidth > window.innerHeight ? '横屏' : '竖屏';
+            document.getElementById('browser').textContent = getBrowserInfo();
+            document.getElementById('resolution').textContent = `${screen.width}×${screen.height}`;
+            document.getElementById('viewport').textContent = `${window.innerWidth}×${window.innerHeight}`;
+        }
+
+        function init() {
+            // 自动检测最佳PPI
+            currentPPI = autoDetectPPI();
+            document.getElementById('ppiInput').value = currentPPI;
+            
+            // 更新设备信息
+            updateDeviceInfo();
+            
+            // 创建尺子
+            createRuler();
+            
+            // 更新精度显示
+            updateAccuracy();
+        }
+
+        // 事件监听
+        window.addEventListener('resize', () => {
+            updateDeviceInfo();
+            createRuler();
+        });
+
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                updateDeviceInfo();
+                createRuler();
+            }, 100);
+        });
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
